@@ -1,142 +1,73 @@
-let staticCacheName = 'restaurant-static-v1';
-self.addEventListener('install', function(event) {
+let staticCache = 'restaurant-static-v1';
+
+self.addEventListener('install', function (event) {
+
+	//andamento da instalação
 	event.waitUntil(
-		caches.open(staticCacheName).then(function(cache) {
-			return cache.addAll([
-				'/',
-				'index.html',
-				'restaurant.html',
+		caches.open(staticCache).then(function (cache) {
+			return cache.addAll(
+				[
+					'/',
+					'index.html',
+					'restaurant.html',
 
-				'css/styles.css',
-				'css/index.css',
-				'css/restaurant_info.css',
+					'css/styles.css',
+					'css/index.css',
+					'css/restaurant_info.css',
 
-				'js/dbhelper.js',
-				'js/main.js',
-				'js/restaurant_info.js',
-				'js/sw_registration.js',
+					'js/dbhelper.js',
+					'js/main.js',
+					'js/restaurant_info.js',
+					'js/sw_registration.js',
+					'data/restaurants.json',
 
-				'img/1.jpg',
-				'img/2.jpg',
-				'img/3.jpg',
-				'img/4.jpg',
-				'img/5.jpg',
-				'img/6.jpg',
-				'img/7.jpg',
-				'img/8.jpg',
-				'img/9.jpg',
-				'img/10.jpg',
-			]);
+					'img/1.jpg',
+					'img/2.jpg',
+					'img/3.jpg',
+					'img/4.jpg',
+					'img/5.jpg',
+					'img/6.jpg',
+					'img/7.jpg',
+					'img/8.jpg',
+					'img/9.jpg',
+					'img/10.jpg',
+				]
+			)
 		})
-	);
-});
+	)
+})
 
-self.addEventListener('activate', function(event) {
-	event.waitUntil(
-		caches.keys().then(function(cacheNames) {
-			return Promise.all(
-				cacheNames.filter(function(cacheName) {
-					return cacheName.startsWith('restaurant-') && cacheName != staticCacheName;
-				}).map(function(cacheName) {
-					return caches.delete(cacheName);
-				})    
-			);
-		})
-	);
-});
-
-self.addEventListener('fetch', (event) => {
+self.addEventListener('fetch', function (event) {
 	console.log(event.request);
+
 	event.respondWith(
 		caches.match(event.request).then(response => {
-			if (response) {
-				console.log('Found in cache:', event.request.url);
-				return response;
-			}
-			console.log('Network request for ', event.request.url);
-			return fetch(event.request).then(networkResponse => {
-				if (networkResponse.status === 404) {
-					console.log(networkResponse.status);
+
+			if (response) return response;
+
+			return fetch(event.request).then(response => {
+				if (response.status === 404) {
 					return;
 				}
-				return caches.open(staticCacheName).then(cache => {
-					cache.put(event.request.url, networkResponse.clone());
-					console.log('Fetched and cached', event.request.url);
-					return networkResponse;
+				return caches.open(staticCache).then(cache => {
+					cache.put(event.request.url, response.clone);
+					return response;
 				})
 			})
 		}).catch(error => {
-			console.log('Error:', error);
+			console.log(error);
 			return;
 		})
+
 	);
-});
+})
 
-self.addEventListener('message', (event) => {
-    console.log(event);
-	
-    // var messages = JSON.parse(event.data);
-    if (event.data.action === 'skipWaiting') {
-       self.skipWaiting();
-    }
-});
-
-self.addEventListener('sync', function (event) {
-	if (event.tag == 'myFirstSync') {
-		const DBOpenRequest = indexedDB.open('restaurants', 1);
-		DBOpenRequest.onsuccess = function (e) {
-		var	db = DBOpenRequest.result;
-			let tx = db.transaction(['offline-reviews', 'readwrite']);
-			let store = tx.objectStore('offline-reviews');
-			// 1. Get submitted reviews while offline
-			let request = store.getAll();
-			request.onsuccess = function () {
-				// 2. POST offline reviews to network
-				for (let i = 0; i < request.result.length; i++) {
-					fetch(`http://localhost:8000/reviews/`, {
-						body: JSON.stringify(request.result[i]),
-						cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-						credentials: 'same-origin', // include, same-origin, *omit
-						headers: {
-							'content-type': 'application/json'
-						},
-						method: 'POST',
-						mode: 'cors', // no-cors, cors, *same-origin
-						redirect: 'follow', // *manual, follow, error
-						referrer: 'no-referrer', // *client, no-referrer
-					})
-					.then(response => {
-						return response.json();
-					})
-					.then(data => {
-						let tx = db.transaction('all-reviews', 'readwrite');
-						let store = tx.objectStore('all-reviews');
-						let request = store.add(data);
-						request.onsuccess = function (data) {
-							//TODO: add data (= one review) to view
-							let tx = db.transaction('offline-reviews', 'readwrite');
-							let store = tx.objectStore('offline-reviews');
-							let request = store.clear();
-							request.onsuccess = function () { };
-							request.onerror = function (error) {
-								console.log('Unable to clear offline-reviews objectStore', error);
-							}
-						};
-						request.onerror = function (error) {
-							console.log('Unable to add objectStore to IDB', error);
-						}
-					})
-					.catch(error => {
-						console.log('Unable to make a POST fetch', error);
-					})
-				}
-			}
-			request.onerror = function (e) {
-				console.log(e);
-			}
-		}
-		DBOpenRequest.onerror = function (e) {
-			console.log(e);
-		}
-	}
-});
+// event.respondWith(
+// 	fetch(event.request).then(function (response) {
+// 		if (response.status === 404) {
+// 			return new fetch('img/1.jpg.');
+// 		}
+// 		return response;
+// 	}).catch(function (params) {
+// 		return new Response('Falha ao conectar com o servidor.');
+// 	})
