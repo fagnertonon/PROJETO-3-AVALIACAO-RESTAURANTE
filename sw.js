@@ -1,5 +1,3 @@
-//https://github.com/akolybelnikov/Restaurant-review-app/blob/master/sw.js
-
 let staticCacheName = 'restaurant-static-v1';
 self.addEventListener('install', function(event) {
 	event.waitUntil(
@@ -8,23 +6,26 @@ self.addEventListener('install', function(event) {
 				'/',
 				'index.html',
 				'restaurant.html',
+
 				'css/styles.css',
 				'css/index.css',
 				'css/restaurant_info.css',
+
 				'js/dbhelper.js',
 				'js/main.js',
 				'js/restaurant_info.js',
 				'js/sw_registration.js',
-				'img/1.webp',
-				'img/2.webp',
-				'img/3.webp',
-				'img/4.webp',
-				'img/5.webp',
-				'img/6.webp',
-				'img/7.webp',
-				'img/8.webp',
-				'img/9.webp',
-				'img/10.webp',
+
+				'img/1.jpg',
+				'img/2.jpg',
+				'img/3.jpg',
+				'img/4.jpg',
+				'img/5.jpg',
+				'img/6.jpg',
+				'img/7.jpg',
+				'img/8.jpg',
+				'img/9.jpg',
+				'img/10.jpg',
 			]);
 		})
 	);
@@ -84,15 +85,15 @@ self.addEventListener('sync', function (event) {
 	if (event.tag == 'myFirstSync') {
 		const DBOpenRequest = indexedDB.open('restaurants', 1);
 		DBOpenRequest.onsuccess = function (e) {
-			db = DBOpenRequest.result;
-			let tx = db.transaction('offline-reviews', 'readwrite');
+		var	db = DBOpenRequest.result;
+			let tx = db.transaction(['offline-reviews', 'readwrite']);
 			let store = tx.objectStore('offline-reviews');
 			// 1. Get submitted reviews while offline
 			let request = store.getAll();
 			request.onsuccess = function () {
 				// 2. POST offline reviews to network
 				for (let i = 0; i < request.result.length; i++) {
-					fetch(`http://localhost:1337/reviews/`, {
+					fetch(`http://localhost:8000/reviews/`, {
 						body: JSON.stringify(request.result[i]),
 						cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
 						credentials: 'same-origin', // include, same-origin, *omit

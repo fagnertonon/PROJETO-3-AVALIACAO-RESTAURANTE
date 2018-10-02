@@ -11,7 +11,17 @@ class DBHelper {
     const port = 8000 // Change this to your server port
     return `http://localhost:${port}/data/restaurants.json`;
   }
-
+	static get dbPromise() {
+		if (!navigator.serviceWorker) {
+			return Promise.resolve();
+		} else {
+			return idb.open('restaurants', 1, function (upgradeDb) {
+				upgradeDb.createObjectStore('all-restaurants', { keyPath: 'id' });
+				upgradeDb.createObjectStore('all-reviews', { keyPath: 'id' });
+				upgradeDb.createObjectStore('offline-reviews', { keyPath: 'updatedAt' });
+			});
+		}
+	}
   /**
    * Fetch all restaurants.
    */
